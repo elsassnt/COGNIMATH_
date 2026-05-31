@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profil — CogniMath</title>
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/riwayat-profil-login.css">
+</head>
+<body>
+
+<!-- Modal Edit Profil -->
+<div class="modal-overlay" id="modal-edit-profil" onclick="if(event.target===this)tutupModalEdit()">
+  <div class="modal-kotak">
+    <div class="modal-header">
+      <h3>✏️ Edit Profil</h3>
+      <button class="modal-tutup" onclick="tutupModalEdit()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-foto" onclick="document.getElementById('input-foto').click()">
+        <div class="preview-avatar-edit" id="preview-edit-avatar" style="position:relative;overflow:hidden">
+          <span id="preview-inisial">E</span>
+          <img id="preview-foto-img" src="" alt="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%">
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:13px;font-weight:600;color:var(--biru)">📷 Ganti Foto Profil</div>
+          <div style="font-size:11px;color:var(--abu);margin-top:4px">Klik untuk pilih gambar (JPG/PNG)</div>
+        </div>
+        <input type="file" id="input-foto" accept="image/*" style="display:none" onchange="previewFoto(event)">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="form-grup">
+          <label class="form-label">Nama Lengkap *</label>
+          <input class="form-input" id="edit-nama" type="text" placeholder="Nama lengkap">
+        </div>
+        <div class="form-grup">
+          <label class="form-label">Username</label>
+          <input class="form-input" id="edit-username" type="text" placeholder="username">
+        </div>
+      </div>
+      <div class="form-grup">
+        <label class="form-label">Email *</label>
+        <input class="form-input" id="edit-email" type="email" placeholder="email@contoh.com">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="form-grup">
+          <label class="form-label">Jurusan / Status</label>
+          <input class="form-input" id="edit-jurusan" type="text" placeholder="Mis: Mahasiswa">
+        </div>
+        <div class="form-grup">
+          <label class="form-label">Semester / Kelas</label>
+          <input class="form-input" id="edit-semester" type="text" placeholder="Mis: Semester 4">
+        </div>
+      </div>
+      <div class="form-grup">
+        <label class="form-label">Bio</label>
+        <textarea class="form-input" id="edit-bio" rows="3" placeholder="Ceritakan tentang dirimu..."></textarea>
+      </div>
+      <p id="err-edit" style="color:var(--bahaya);font-size:12px;min-height:16px"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-abu" onclick="tutupModalEdit()">Batal</button>
+      <button class="btn btn-utama" onclick="simpanEditProfil()">💾 Simpan Perubahan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ubah Password -->
+<div class="modal-overlay" id="modal-password" onclick="if(event.target===this)tutupModalPassword()">
+  <div class="modal-kotak" style="max-width:420px">
+    <div class="modal-header">
+      <h3>🔑 Ubah Password</h3>
+      <button class="modal-tutup" onclick="tutupModalPassword()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="err-pass" style="color:var(--bahaya);font-size:12px;margin-bottom:12px;min-height:16px"></p>
+      <div class="form-grup">
+        <label class="form-label">Password Lama</label>
+        <input class="form-input" id="pass-lama" type="password" placeholder="••••••••">
+      </div>
+      <div class="form-grup">
+        <label class="form-label">Password Baru</label>
+        <input class="form-input" id="pass-baru" type="password" placeholder="Minimal 6 karakter">
+      </div>
+      <div class="form-grup">
+        <label class="form-label">Konfirmasi Password Baru</label>
+        <input class="form-input" id="pass-konfirm" type="password" placeholder="Ulangi password baru">
+      </div>
+      <div style="background:var(--biru-pucat);border-radius:8px;padding:12px;font-size:12px;color:var(--biru-gelap)">
+        💡 Gunakan kombinasi huruf besar, huruf kecil, angka, dan simbol agar lebih aman.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-abu" onclick="tutupModalPassword()">Batal</button>
+      <button class="btn btn-utama" onclick="simpanPassword()">Simpan Password</button>
+    </div>
+  </div>
+</div>
+
+<div id="app-layout"></div>
+<template id="konten-halaman">
+
+  <div style="margin-bottom:20px">
+    <h1 style="font-size:20px">Profil Saya</h1>
+    <p style="color:var(--abu);font-size:13px;margin-top:4px">Data tersimpan permanen di database perangkatmu 💾</p>
+  </div>
+
+  <!-- Cover profil -->
+  <div class="profil-cover">
+    <div class="profil-cover-bg"></div>
+    <div class="profil-cover-body">
+      <div class="avatar-profil-wrap" id="avatar-profil-wrap" onclick="bukaModalEdit()" title="Klik untuk ganti foto">
+        <span id="inisial-avatar-profil">?</span>
+        <img id="foto-avatar-profil" src="" alt="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%">
+        <div class="avatar-overlay">📷</div>
+      </div>
+      <div class="profil-info-utama">
+        <div class="profil-nama" id="profil-nama">—</div>
+        <div class="profil-sub">
+          <span>👤 <span id="profil-username">—</span></span>
+          <span>📧 <span id="profil-email">—</span></span>
+          <span>🎓 <span id="profil-jurusan">—</span></span>
+        </div>
+        <div style="margin-top:8px;font-size:13px;color:var(--abu);font-style:italic" id="profil-bio"></div>
+      </div>
+      <div class="profil-aksi">
+        <button class="btn btn-utama" onclick="bukaModalEdit()">✏️ Edit Profil</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistik belajar -->
+  <div class="kepala-seksi"><h2 class="judul-seksi">Statistik Belajar</h2></div>
+  <div class="grid-stats">
+    <div class="kartu-stat">
+      <div class="ikon-stat">📚</div>
+      <div class="angka-stat" id="pstat-materi">0</div>
+      <div class="label-stat">Materi Selesai</div>
+    </div>
+    <div class="kartu-stat">
+      <div class="ikon-stat">🎬</div>
+      <div class="angka-stat" id="pstat-video">0</div>
+      <div class="label-stat">Video Ditonton</div>
+    </div>
+    <div class="kartu-stat">
+      <div class="ikon-stat">✅</div>
+      <div class="angka-stat" id="pstat-kuis">0</div>
+      <div class="label-stat">Kuis Selesai</div>
+    </div>
+    <div class="kartu-stat">
+      <div class="ikon-stat">⭐</div>
+      <div class="angka-stat" id="pstat-nilai" style="color:var(--sukses)">—</div>
+      <div class="label-stat">Nilai Rata-rata</div>
+    </div>
+  </div>
+
+  <!-- Pencapaian -->
+  <div class="kepala-seksi" style="margin-top:8px"><h2 class="judul-seksi">Pencapaian</h2></div>
+  <div class="grid-pencapaian" id="container-pencapaian"></div>
+
+  <!-- Pengaturan -->
+  <div class="kepala-seksi" style="margin-top:24px"><h2 class="judul-seksi">Pengaturan Akun</h2></div>
+  <div class="daftar-pengaturan">
+
+    <div class="item-pengaturan" onclick="bukaModalEdit()">
+      <div class="kiri-pengaturan">
+        <div class="ikon-pengaturan">👤</div>
+        <div class="teks-pengaturan">
+          <div class="judul-atur">Edit Profil</div>
+          <div class="sub-atur">Ubah nama, email, foto profil, dan bio</div>
+        </div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+
+    <div class="item-pengaturan" onclick="bukaModalPassword()">
+      <div class="kiri-pengaturan">
+        <div class="ikon-pengaturan">🔑</div>
+        <div class="teks-pengaturan">
+          <div class="judul-atur">Ubah Password</div>
+          <div class="sub-atur">Perbarui keamanan akun kamu</div>
+        </div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+
+    <div class="item-pengaturan" onclick="toggleNotifikasi()">
+      <div class="kiri-pengaturan">
+        <div class="ikon-pengaturan">🔔</div>
+        <div class="teks-pengaturan">
+          <div class="judul-atur">Notifikasi Harian</div>
+          <div class="sub-atur">Terima pengingat belajar setiap hari</div>
+        </div>
+      </div>
+      <div class="toggle-sw" id="toggle-notif"></div>
+    </div>
+
+    <div class="item-pengaturan" onclick="tampilkanNotif('Mode gelap segera hadir!','🌙')">
+      <div class="kiri-pengaturan">
+        <div class="ikon-pengaturan">🌙</div>
+        <div class="teks-pengaturan">
+          <div class="judul-atur">Mode Gelap</div>
+          <div class="sub-atur">Segera hadir — pantau terus ya!</div>
+        </div>
+      </div>
+      <span class="badge badge-biru" style="font-size:10px">Segera</span>
+    </div>
+
+    <div class="item-pengaturan" onclick="konfirmasiHapusData()">
+      <div class="kiri-pengaturan">
+        <div class="ikon-pengaturan" style="background:#ffeaea">🗑️</div>
+        <div class="teks-pengaturan">
+          <div class="judul-atur" style="color:var(--bahaya)">Hapus Semua Data Belajar</div>
+          <div class="sub-atur">Reset progress, riwayat, dan nilai kuis</div>
+        </div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+
+    <div class="item-pengaturan" onclick="logoutAkun()">
+      <div class="kiri-pengaturan">
+        <div class="ikon-pengaturan" style="background:#ffeaea">🚪</div>
+        <div class="teks-pengaturan">
+          <div class="judul-atur" style="color:var(--bahaya)">Keluar dari Akun</div>
+          <div class="sub-atur">Keluar dari sesi ini</div>
+        </div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+
+  </div>
+
+  <div style="text-align:center;margin-top:24px;padding:16px;color:var(--abu-terang);font-size:12px">
+    CogniMath v2.0 · Data tersimpan di IndexedDB perangkatmu 💾<br>
+    Dibuat dengan ❤️ untuk pelajar Indonesia
+  </div>
+
+</template>
+
+<script src="js/data.js"></script>
+<script src="js/database.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/layout.js"></script>
+<script>
+/* ── Data pencapaian ── */
+const pencapaianData = [
+  { ikon:'🥇', nama:'Juara Kuis',         desc:'Raih nilai 100 di kuis manapun',    terkunci:false },
+  { ikon:'📚', nama:'Pembaca Rajin',      desc:'Baca minimal 3 materi',             terkunci:false },
+  { ikon:'🔥', nama:'Rajin Belajar',      desc:'Kerjakan 3 kuis atau lebih',        terkunci:false },
+  { ikon:'🌟', nama:'Master Aljabar',     desc:'Selesaikan semua kuis dengan nilai ≥80', terkunci:true },
+  { ikon:'🚀', nama:'Bintang Matematika', desc:'Nilai rata-rata ≥ 90',              terkunci:true  },
+  { ikon:'🏅', nama:'Video Maniac',       desc:'Tonton semua 6 video',              terkunci:true  },
+];
+
+let _fotoSementara = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const ok = await proteksiHalaman();
+  if (!ok) return;
+  renderLayout('profil.html');
+  muatProfilUI();
+  muatStatistik();
+  renderPencapaian();
+});
+
+function muatProfilUI() {
+  const p = window.penggunaAktif;
+  if (!p) return;
+  const inisial = p.nama.split(' ').map(w=>w[0]).slice(0,1).join('').toUpperCase();
+
+  document.getElementById('profil-nama').textContent    = p.nama;
+  document.getElementById('profil-username').textContent= '@' + p.username;
+  document.getElementById('profil-email').textContent   = p.email;
+  document.getElementById('profil-jurusan').textContent = (p.jurusan||'') + (p.semester ? ' • '+p.semester : '');
+  document.getElementById('profil-bio').textContent     = p.bio || '';
+  document.getElementById('inisial-avatar-profil').textContent = inisial;
+
+  // Foto
+  const fotoEl = document.getElementById('foto-avatar-profil');
+  if (p.foto) {
+    fotoEl.src = p.foto;
+    fotoEl.style.display = 'block';
+    document.getElementById('inisial-avatar-profil').textContent = '';
+  } else {
+    fotoEl.style.display = 'none';
+    document.getElementById('inisial-avatar-profil').textContent = inisial;
+  }
+
+  // Toggle notifikasi
+  const toggle = document.getElementById('toggle-notif');
+  if (toggle) toggle.className = 'toggle-sw' + (p.notifikasi ? ' on' : '');
+}
+
+async function muatStatistik() {
+  const uid = parseInt(localStorage.getItem('cognimath_uid'));
+  const [progress, nilaiMap] = await Promise.all([
+    getProgress(uid),
+    getNilaiKuis(uid),
+  ]);
+  const nilaiArr = Object.values(nilaiMap).map(n => n.nilai);
+  const rataRata = nilaiArr.length ? Math.round(nilaiArr.reduce((a,b)=>a+b,0)/nilaiArr.length) : null;
+
+  document.getElementById('pstat-materi').textContent = progress.materi.length;
+  document.getElementById('pstat-video').textContent  = progress.video.length;
+  document.getElementById('pstat-kuis').textContent   = nilaiArr.length;
+  document.getElementById('pstat-nilai').textContent  = rataRata ? rataRata+'%' : '—';
+
+  // Update status pencapaian berdasarkan data nyata
+  pencapaianData[0].terkunci = !Object.values(nilaiMap).some(n => n.nilai === 100);
+  pencapaianData[1].terkunci = progress.materi.length < 3;
+  pencapaianData[2].terkunci = nilaiArr.length < 3;
+  pencapaianData[3].terkunci = nilaiArr.length < 6 || Math.min(...nilaiArr) < 80;
+  pencapaianData[4].terkunci = !rataRata || rataRata < 90;
+  pencapaianData[5].terkunci = progress.video.length < 6;
+  renderPencapaian();
+}
+
+function renderPencapaian() {
+  const cont = document.getElementById('container-pencapaian');
+  if (!cont) return;
+  cont.innerHTML = pencapaianData.map(p => `
+    <div class="kartu-pencapaian ${p.terkunci ? 'terkunci' : ''}">
+      <span class="ikon-badge">${p.ikon}</span>
+      <div>
+        <div class="nama-badge">${p.nama}</div>
+        <div class="desc-badge">${p.desc}</div>
+        ${p.terkunci
+          ? '<div style="font-size:10px;color:var(--abu);margin-top:3px">🔒 Belum diraih</div>'
+          : '<div style="font-size:10px;color:var(--sukses);margin-top:3px">✓ Diraih!</div>'}
+      </div>
+    </div>`).join('');
+}
+
+/* ── Modal Edit Profil ── */
+function bukaModalEdit() {
+  const p = window.penggunaAktif;
+  document.getElementById('edit-nama').value     = p.nama;
+  document.getElementById('edit-username').value = p.username;
+  document.getElementById('edit-email').value    = p.email;
+  document.getElementById('edit-jurusan').value  = p.jurusan || '';
+  document.getElementById('edit-semester').value = p.semester || '';
+  document.getElementById('edit-bio').value      = p.bio || '';
+  document.getElementById('err-edit').textContent= '';
+  _fotoSementara = null;
+
+  // Preview avatar di modal
+  const prev = document.getElementById('preview-edit-avatar');
+  const prevImg = document.getElementById('preview-foto-img');
+  const prevInisial = document.getElementById('preview-inisial');
+  if (p.foto) {
+    prevImg.src = p.foto; prevImg.style.display='block';
+    prevInisial.textContent = '';
+  } else {
+    prevImg.style.display = 'none';
+    prevInisial.textContent = p.nama[0].toUpperCase();
+  }
+  document.getElementById('modal-edit-profil').classList.add('terbuka');
+}
+function tutupModalEdit() {
+  document.getElementById('modal-edit-profil').classList.remove('terbuka');
+  _fotoSementara = null;
+}
+
+function previewFoto(event) {
+  const file = event.target.files[0];
+  if (!file || !file.type.startsWith('image/')) {
+    tampilkanNotif('File harus berupa gambar!','⚠️'); return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    _fotoSementara = e.target.result;
+    const prevImg = document.getElementById('preview-foto-img');
+    prevImg.src = _fotoSementara;
+    prevImg.style.display = 'block';
+    document.getElementById('preview-inisial').textContent = '';
+    tampilkanNotif('Foto dipilih! Klik Simpan untuk menyimpan.','📷');
+  };
+  reader.readAsDataURL(file);
+}
+
+async function simpanEditProfil() {
+  const nama     = document.getElementById('edit-nama').value.trim();
+  const username = document.getElementById('edit-username').value.trim();
+  const email    = document.getElementById('edit-email').value.trim();
+  const jurusan  = document.getElementById('edit-jurusan').value.trim();
+  const semester = document.getElementById('edit-semester').value.trim();
+  const bio      = document.getElementById('edit-bio').value.trim();
+  const errEl    = document.getElementById('err-edit');
+
+  if (!nama)               { errEl.textContent='Nama tidak boleh kosong!'; return; }
+  if (!email.includes('@')){ errEl.textContent='Format email tidak valid!'; return; }
+
+  const uid = parseInt(localStorage.getItem('cognimath_uid'));
+  const dataUpdate = { nama, username, email, jurusan, semester, bio };
+  if (_fotoSementara) dataUpdate.foto = _fotoSementara;
+
+  try {
+    const updated = await updateProfil(uid, dataUpdate);
+    window.penggunaAktif = updated;
+    tutupModalEdit();
+    muatProfilUI();
+    _updateUISetelahLogin();
+    tampilkanNotif('Profil berhasil diperbarui! ✅','✅');
+  } catch(e) {
+    errEl.textContent = 'Gagal menyimpan: ' + e.message;
+  }
+}
+
+/* ── Modal Ubah Password ── */
+function bukaModalPassword() {
+  ['pass-lama','pass-baru','pass-konfirm'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('err-pass').textContent='';
+  document.getElementById('modal-password').classList.add('terbuka');
+}
+function tutupModalPassword() {
+  document.getElementById('modal-password').classList.remove('terbuka');
+}
+async function simpanPassword() {
+  const lama    = document.getElementById('pass-lama').value;
+  const baru    = document.getElementById('pass-baru').value;
+  const konfirm = document.getElementById('pass-konfirm').value;
+  const errEl   = document.getElementById('err-pass');
+
+  if (!lama||!baru||!konfirm) { errEl.textContent='Semua kolom wajib diisi!'; return; }
+  if (baru.length < 6)        { errEl.textContent='Password baru minimal 6 karakter!'; return; }
+  if (baru !== konfirm)       { errEl.textContent='Konfirmasi password tidak cocok!'; return; }
+
+  const uid = parseInt(localStorage.getItem('cognimath_uid'));
+  try {
+    await ubahPassword(uid, lama, baru);
+    tutupModalPassword();
+    tampilkanNotif('Password berhasil diubah! 🔑','🔑');
+  } catch(e) {
+    errEl.textContent = '❌ ' + e.message;
+  }
+}
+
+/* ── Toggle Notifikasi ── */
+async function toggleNotifikasi() {
+  const p = window.penggunaAktif;
+  p.notifikasi = !p.notifikasi;
+  const uid = parseInt(localStorage.getItem('cognimath_uid'));
+  await updateProfil(uid, { notifikasi: p.notifikasi });
+  const toggle = document.getElementById('toggle-notif');
+  if (toggle) toggle.className = 'toggle-sw' + (p.notifikasi ? ' on' : '');
+  tampilkanNotif(p.notifikasi ? 'Notifikasi diaktifkan.' : 'Notifikasi dinonaktifkan.', p.notifikasi?'🔔':'🔕');
+}
+
+/* ── Hapus Data ── */
+async function konfirmasiHapusData() {
+  if (!confirm('Yakin ingin menghapus SEMUA data belajar?\nProgress, riwayat, dan nilai kuis akan direset.\n\nAkun kamu tetap ada.')) return;
+  const uid = parseInt(localStorage.getItem('cognimath_uid'));
+  await hapusSemuaRiwayat(uid);
+  window.progressAktif  = { materi:[], video:[] };
+  window.nilaiKuisAktif = {};
+  await muatStatistik();
+  tampilkanNotif('Semua data belajar berhasil dihapus.','🗑️');
+}
+</script>
+</body>
+</html>

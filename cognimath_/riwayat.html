@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riwayat — CogniMath</title>
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/riwayat-profil-login.css">
+</head>
+<body>
+<div id="app-layout"></div>
+<template id="konten-halaman">
+  <div style="margin-bottom:20px">
+    <h1 style="font-size:20px">Riwayat Belajar</h1>
+    <p style="color:var(--abu);font-size:13px;margin-top:4px">Semua aktivitas tersimpan permanen di database perangkatmu.</p>
+  </div>
+
+  <div class="grid-stats" style="margin-bottom:24px">
+    <div class="kartu-stat">
+      <div class="ikon-stat">📚</div>
+      <div class="angka-stat" id="stat-materi">0</div>
+      <div class="label-stat">Materi Dibaca</div>
+    </div>
+    <div class="kartu-stat">
+      <div class="ikon-stat">🎬</div>
+      <div class="angka-stat" id="stat-video">0</div>
+      <div class="label-stat">Video Ditonton</div>
+    </div>
+    <div class="kartu-stat">
+      <div class="ikon-stat">✅</div>
+      <div class="angka-stat" id="stat-kuis">0</div>
+      <div class="label-stat">Kuis Selesai</div>
+    </div>
+    <div class="kartu-stat">
+      <div class="ikon-stat">⭐</div>
+      <div class="angka-stat" id="stat-nilai" style="color:var(--sukses)">—</div>
+      <div class="label-stat">Nilai Terbaik Rata-rata</div>
+    </div>
+  </div>
+
+  <div class="kepala-seksi">
+    <h2 class="judul-seksi">Aktivitas Terbaru</h2>
+    <button class="btn btn-abu btn-kecil" onclick="muatRiwayat()">🔄 Refresh</button>
+  </div>
+  <div id="container-riwayat">
+    <div style="text-align:center;padding:32px;color:var(--abu)">Memuat riwayat...</div>
+  </div>
+</template>
+
+<script src="js/data.js"></script>
+<script src="js/database.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/layout.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const ok = await proteksiHalaman();
+  if (!ok) return;
+  renderLayout('riwayat.html');
+  muatRiwayat();
+});
+
+async function muatRiwayat() {
+  const uid = parseInt(localStorage.getItem('cognimath_uid'));
+
+  // Ambil semua data dari database
+  const [riwayat, progress, nilaiMap] = await Promise.all([
+    getRiwayatDB(uid),
+    getProgress(uid),
+    getNilaiKuis(uid),
+  ]);
+
+  // Hitung statistik
+  const nilaiArr = Object.values(nilaiMap).map(n => n.nilai);
+  const rataRata = nilaiArr.length ? Math.round(nilaiArr.reduce((a,b)=>a+b,0)/nilaiArr.length) : null;
+
+  document.getElementById('stat-materi').textContent = progress.materi.length;
+  document.getElementById('stat-video').textContent  = progress.video.length;
+  document.getElementById('stat-kuis').textContent   = nilaiArr.length;
+  document.getElementById('stat-nilai').textContent  = rataRata ? rataRata+'%' : '—';
+
+  // Render riwayat
+  const cont = document.getElementById('container-riwayat');
+  if (!riwayat.length) {
+    cont.innerHTML = `<div class="status-kosong"><div class="ikon-kosong">📋</div><h3>Belum ada aktivitas</h3><p>Mulai belajar untuk melihat riwayatmu di sini.</p></div>`;
+    return;
+  }
+
+  cont.innerHTML = riwayat.map(r => {
+    // Format waktu relatif
+    const selisihMs = Date.now() - new Date(r.waktu).getTime();
+    const selisihMnt = Math.floor(selisihMs / 60000);
+    const selisihJam = Math.floor(selisihMnt / 60);
+    const selisihHari= Math.floor(selisihJam / 24);
+    const waktuLabel = selisihMnt < 1 ? 'Baru saja'
+      : selisihMnt < 60 ? `${selisihMnt} menit lalu`
+      : selisihJam < 24 ? `${selisihJam} jam lalu`
+      : selisihHari === 1 ? 'Kemarin'
+      : `${selisihHari} hari lalu`;
+
+    return `
+    <div class="item-riwayat">
+      <div class="ikon-riwayat" style="background:${r.warnaLatar}">${r.ikon}</div>
+      <div class="info-riwayat">
+        <h4>${r.judul}</h4>
+        <p>${r.keterangan} · ${waktuLabel}</p>
+      </div>
+      ${r.nilai !== null ? `<div class="nilai-riwayat">${r.nilai}<span style="font-size:12px;color:var(--abu)">/100</span></div>` : ''}
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>

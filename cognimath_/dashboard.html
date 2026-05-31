@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beranda — CogniMath</title>
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+<div id="app-layout"></div>
+<template id="konten-halaman">
+
+  <div style="margin-bottom:20px">
+    <h1 style="font-size:22px" id="teks-sapa">Halo! 👋</h1>
+    <p style="color:var(--abu);font-size:13px;margin-top:4px">Belajar matematika jadi lebih mudah dan menyenangkan bersama CogniMath.</p>
+  </div>
+
+  <div class="banner-hero">
+    <div class="banner-teks">
+      <h2>Lanjutkan Belajarmu! 📚</h2>
+      <p>Setiap menit yang kamu habiskan untuk belajar adalah investasi terbaik untuk masa depanmu!</p>
+      <div class="label-prog">
+        <span>Progress Materi</span><span id="persen-prog">0%</span>
+      </div>
+      <div class="bar-prog-luar">
+        <div class="bar-prog-dalam" id="bar-prog" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="emoji-banner">🧮</div>
+  </div>
+
+  <div class="kepala-seksi">
+    <h2 class="judul-seksi">Menu Utama</h2>
+  </div>
+  <div class="grid-fitur">
+    <div class="kartu-fitur" onclick="location.href='materi.html'">
+      <div class="ikon-fitur" style="background:#e3f2fd">📚</div>
+      <h3>Materi Belajar</h3>
+      <p>Pelajari 6 topik matematika secara sistematis dengan penjelasan yang mudah dipahami.</p>
+      <a class="tautan">Lihat Materi →</a>
+    </div>
+    <div class="kartu-fitur" onclick="location.href='video.html'">
+      <div class="ikon-fitur" style="background:#e8f5e9">🎬</div>
+      <h3>Video Pembelajaran</h3>
+      <p>Tonton video YouTube langsung di dalam aplikasi tanpa perlu buka tab baru.</p>
+      <a class="tautan">Tonton Video →</a>
+    </div>
+    <div class="kartu-fitur" onclick="location.href='kuis.html'">
+      <div class="ikon-fitur" style="background:#fff8e1">🏆</div>
+      <h3>Kuis Interaktif</h3>
+      <p>Uji pemahamanmu dengan 6 kuis berbeda. Timer 15 menit & langsung tahu nilainya!</p>
+      <a class="tautan">Mulai Kuis →</a>
+    </div>
+    <div class="kartu-fitur" onclick="location.href='riwayat.html'">
+      <div class="ikon-fitur" style="background:#f3e5f5">📊</div>
+      <h3>Riwayat Belajar</h3>
+      <p>Pantau semua aktivitas belajar, nilai kuis, dan statistik perkembanganmu.</p>
+      <a class="tautan">Lihat Riwayat →</a>
+    </div>
+  </div>
+
+  <div class="kepala-seksi">
+    <h2 class="judul-seksi">Materi Pilihan</h2>
+    <a href="materi.html" class="btn btn-garis btn-kecil">Lihat Semua →</a>
+  </div>
+  <div class="grid-materi-singkat" id="container-materi-dashboard"></div>
+
+</template>
+
+<script src="js/data.js"></script>
+<script src="js/database.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/layout.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const ok = await proteksiHalaman();
+  if (!ok) return;
+
+  renderLayout('dashboard.html');
+
+  const p   = window.penggunaAktif;
+  const jam = new Date().getHours();
+  const sapa = jam<11?'Selamat Pagi':jam<15?'Selamat Siang':jam<18?'Selamat Sore':'Selamat Malam';
+  const el = document.getElementById('teks-sapa');
+  if (el) el.textContent = `${sapa}, ${p.nama.split(' ')[0]}! 👋`;
+
+  // Progress bar
+  const prog   = window.progressAktif;
+  const persen = Math.round((prog.materi.length / semuaMateri.length) * 100);
+  const barEl  = document.getElementById('bar-prog');
+  const txtEl  = document.getElementById('persen-prog');
+  if (barEl) barEl.style.width = persen + '%';
+  if (txtEl) txtEl.textContent = persen + '%';
+
+  // Preview materi
+  const container = document.getElementById('container-materi-dashboard');
+  if (container) {
+    container.innerHTML = semuaMateri.slice(0,3).map(m => `
+      <div class="kartu-materi-singkat" onclick="location.href='materi.html?id=${m.id}'">
+        <div class="ikon-materi-kecil" style="background:${m.warnaLatar};color:${m.warnaIkon}">${m.ikon}</div>
+        <div>
+          <h4>${m.judul}</h4>
+          <p>${m.deskripsi}</p>
+          <a class="tautan">Baca Materi →</a>
+        </div>
+      </div>`).join('');
+  }
+});
+</script>
+</body>
+</html>

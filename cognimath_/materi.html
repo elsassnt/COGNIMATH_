@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Materi — CogniMath</title>
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/materi.css">
+</head>
+<body>
+<div id="app-layout"></div>
+<template id="konten-halaman">
+  <div id="view-daftar">
+    <div style="margin-bottom:20px">
+      <h1 style="font-size:20px">Materi Pelajaran</h1>
+      <p style="color:var(--abu);font-size:13px;margin-top:4px">Pilih topik yang ingin kamu pelajari. Ada 6 topik tersedia!</p>
+    </div>
+    <div class="tab-grup" id="tab-materi" style="margin-bottom:20px">
+      <div class="tab-item aktif" onclick="filterMateri('semua',this)">Semua</div>
+      <div class="tab-item" onclick="filterMateri('aljabar',this)">Aljabar</div>
+      <div class="tab-item" onclick="filterMateri('persamaan',this)">Persamaan</div>
+      <div class="tab-item" onclick="filterMateri('fungsi',this)">Fungsi</div>
+      <div class="tab-item" onclick="filterMateri('aritmatika',this)">Lainnya</div>
+    </div>
+    <div id="container-materi"></div>
+  </div>
+  <div id="view-detail" style="display:none">
+    <div id="isi-detail-materi"></div>
+  </div>
+</template>
+
+<script src="js/data.js"></script>
+<script src="js/database.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/layout.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const ok = await proteksiHalaman();
+  if (!ok) return;
+  renderLayout('materi.html');
+
+  // Cek apakah ada materi tertentu yang harus langsung dibuka via URL param
+  const params = new URLSearchParams(window.location.search);
+  const idBuka = params.get('id');
+  if (idBuka) bukaDetailMateri(parseInt(idBuka));
+  else renderDaftarMateri('semua');
+});
+
+function filterMateri(filter, el) {
+  document.querySelectorAll('#tab-materi .tab-item').forEach(t => t.classList.remove('aktif'));
+  el.classList.add('aktif');
+  renderDaftarMateri(filter);
+}
+
+function renderDaftarMateri(filter) {
+  const prog  = window.progressAktif || { materi:[] };
+  const list  = filter === 'semua' ? semuaMateri : semuaMateri.filter(m => m.kategori === filter);
+  const cont  = document.getElementById('container-materi');
+
+  document.getElementById('view-daftar').style.display = '';
+  document.getElementById('view-detail').style.display = 'none';
+
+  if (!list.length) {
+    cont.innerHTML = `<div class="status-kosong"><div class="ikon-kosong">📭</div><h3>Belum ada materi</h3><p>Materi untuk kategori ini belum tersedia.</p></div>`;
+    return;
+  }
+  cont.innerHTML = list.map(m => `
+    <div class="item-materi" onclick="bukaDetailMateri(${m.id})">
+      <div class="ikon-materi" style="background:${m.warnaLatar};color:${m.warnaIkon}">${m.ikon}</div>
+      <div class="info">
+        <h4>${m.judul}</h4>
+        <p>${m.deskripsi}</p>
+        <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+          <span class="badge badge-biru">${m.kategori}</span>
+          <span class="badge badge-abu">⏱ ~${m.waktuBaca||5} menit</span>
+          ${prog.materi.includes(m.id) ? '<span class="badge badge-hijau">✓ Sudah dibaca</span>' : ''}
+        </div>
+      </div>
+      <button class="btn btn-utama btn-kecil">Baca →</button>
+    </div>`).join('');
+}
+
+async function bukaDetailMateri(id) {
+  const m = semuaMateri.find(x => x.id === id);
+  if (!m) return;
+
+  // Tandai sebagai sudah dibaca di database
+  const uid = parseInt(localStorage.getItem('cognimath_uid'));
+  await tandaiSelesai(uid, 'materi', id);
+
+  // Update progress lokal
+  if (!window.progressAktif.materi.includes(id)) {
+    window.progressAktif.materi.push(id);
+  }
+
+  // Catat riwayat
+  await tambahRiwayatDB(uid, { tipe:'materi', judul:m.judul, keterangan:'Baru saja dibaca', nilai:null, ikon:'📚', warnaLatar:'#E3F2FD' });
+
+  document.getElementById('view-daftar').style.display = 'none';
+  document.getElementById('view-detail').style.display = '';
+  window.scrollTo(0,0);
+
+  document.getElementById('isi-detail-materi').innerHTML = `
+    <div class="breadcrumb">
+      <span style="cursor:pointer;color:var(--abu)" onclick="renderDaftarMateri('semua')">Beranda</span>
+      <span>›</span>
+      <span style="cursor:pointer;color:var(--abu)" onclick="renderDaftarMateri('semua')">Materi</span>
+      <span>›</span>
+      <span>${m.judul}</span>
+    </div>
+    <div class="kotak-materi">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:16px;flex-wrap:wrap">
+        <div class="ikon-materi" style="background:${m.warnaLatar};color:${m.warnaIkon};width:56px;height:56px;font-size:26px;border-radius:14px;flex-shrink:0">${m.ikon}</div>
+        <div style="flex:1">
+          <h1>${m.judul}</h1>
+          <p class="desc-materi">${m.deskripsi}</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+            <span class="badge badge-biru">📂 ${m.kategori}</span>
+            <span class="badge badge-abu">⏱ ~${m.waktuBaca||5} menit baca</span>
+            <span class="badge badge-hijau">✓ Sudah dibaca</span>
+          </div>
+        </div>
+      </div>
+      <div class="intro-materi">💡 <strong>Ringkasan:</strong> ${m.konten.intro}</div>
+      ${m.konten.seksi.map(s => `
+        <div class="seksi-materi">
+          <h3>${s.judul}</h3>
+          <p>${s.teks}</p>
+          ${s.rumus ? `<div class="kotak-rumus">${s.rumus.replace(/\n/g,'<br>')}</div>` : ''}
+          ${s.contohSoal ? `
+            <div style="background:#f0f7ff;border-radius:10px;padding:14px;margin-top:12px;border-left:3px solid var(--biru)">
+              <div style="font-size:12px;font-weight:600;color:var(--biru);margin-bottom:6px">📝 Contoh Soal</div>
+              <p style="font-size:13px;color:#444;white-space:pre-line">${s.contohSoal}</p>
+            </div>` : ''}
+        </div>`).join('')}
+      <div style="background:var(--abu-latar);border-radius:var(--radius-sm);padding:16px;margin-top:8px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px">📌 Poin Penting</div>
+        <ul style="font-size:13px;color:var(--abu);padding-left:18px;line-height:2">
+          ${(m.poinPenting||[]).map(p=>`<li>${p}</li>`).join('')}
+        </ul>
+      </div>
+      <div class="nav-materi">
+        <button class="btn btn-garis" onclick="renderDaftarMateri('semua')">← Kembali</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-abu" onclick="location.href='video.html'">🎬 Tonton Video</button>
+          <button class="btn btn-utama" onclick="location.href='kuis.html'">Mulai Kuis →</button>
+        </div>
+      </div>
+    </div>`;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — CogniMath</title>
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/riwayat-profil-login.css">
+  <style>
+    .tab-login { display:flex; gap:0; background:var(--abu-latar); border-radius:10px; padding:4px; margin-bottom:24px; }
+    .tab-login-item { flex:1; padding:9px; border-radius:7px; font-size:13px; font-weight:500; cursor:pointer; transition:var(--trans); color:var(--abu); text-align:center; }
+    .tab-login-item.aktif { background:var(--putih); color:var(--biru-gelap); font-weight:600; box-shadow:0 2px 8px rgba(21,101,192,.1); }
+    .form-daftar { display:none; }
+    .form-daftar.tampil { display:block; }
+    .form-login { display:block; }
+    .form-login.sembunyi { display:none; }
+    .loading-overlay { position:fixed;inset:0;background:rgba(255,255,255,.9);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px; }
+    .loading-overlay.tampil { display:flex; }
+    .spinner { width:48px;height:48px;border:4px solid var(--biru-muda);border-top-color:var(--biru);border-radius:50%;animation:spin 1s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <p style="color:var(--biru);font-size:14px;font-weight:600">Memuat CogniMath...</p>
+</div>
+
+<!-- Notifikasi -->
+<div class="notif-popup" id="notif-popup">
+  <span class="notif-ikon" id="notif-ikon">✅</span>
+  <span class="notif-teks" id="notif-teks">Berhasil!</span>
+</div>
+
+<div class="halaman-login">
+
+  <!-- Panel kiri -->
+  <div class="login-kiri">
+    <div class="logo-login">
+      <img src="Cognimath.png" alt="Logo CogniMath">
+      <h1>COGNIMATH</h1>
+      <p class="tagline">LEARN · MATH · PRACTICE</p>
+      <p class="deskripsi">Platform belajar matematika interaktif. Daftarkan akunmu dan mulai perjalanan belajar yang menyenangkan!</p>
+      <div class="login-fitur">
+        <div class="login-fitur-item"><span>📚</span> 6 Materi Lengkap</div>
+        <div class="login-fitur-item"><span>🎬</span> Video In-App</div>
+        <div class="login-fitur-item"><span>🏆</span> Kuis Interaktif</div>
+        <div class="login-fitur-item"><span>💾</span> Data Tersimpan Permanen</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel kanan -->
+  <div class="login-kanan">
+    <div class="kotak-form">
+
+      <!-- Tab Login / Daftar -->
+      <div class="tab-login">
+        <div class="tab-login-item aktif" id="tab-masuk" onclick="gantiTabLogin('masuk')">Masuk</div>
+        <div class="tab-login-item" id="tab-daftar" onclick="gantiTabLogin('daftar')">Daftar Akun</div>
+      </div>
+
+      <!-- ── FORM MASUK ── -->
+      <div class="form-login" id="form-masuk">
+        <h2 style="margin-bottom:6px">Selamat Datang Kembali!</h2>
+        <p class="subjudul">Masuk untuk melanjutkan belajarmu.</p>
+
+        <div class="grup-form">
+          <label class="label-form">Email atau Username</label>
+          <div class="wrap-input">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input type="text" id="masuk-email" placeholder="email@contoh.com atau username"
+                   onkeydown="if(event.key==='Enter')prosesLogin()">
+          </div>
+        </div>
+
+        <div class="grup-form">
+          <label class="label-form">Password</label>
+          <div class="wrap-input">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" id="masuk-password" placeholder="••••••••"
+                   onkeydown="if(event.key==='Enter')prosesLogin()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"
+                 style="cursor:pointer;flex-shrink:0" onclick="togglePass('masuk-password')">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </div>
+        </div>
+
+        <p id="err-masuk" style="color:var(--bahaya);font-size:12px;margin-bottom:12px;min-height:16px"></p>
+        <button class="btn-masuk" onclick="prosesLogin()">Masuk →</button>
+        <p class="teks-daftar">Belum punya akun? <a onclick="gantiTabLogin('daftar')">Daftar Sekarang</a></p>
+      </div>
+
+      <!-- ── FORM DAFTAR ── -->
+      <div class="form-daftar" id="form-daftar">
+        <h2 style="margin-bottom:6px">Buat Akun Baru</h2>
+        <p class="subjudul">Daftar gratis dan mulai belajar matematika hari ini!</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="grup-form">
+            <label class="label-form">Nama Lengkap *</label>
+            <div class="wrap-input">
+              <input type="text" id="daftar-nama" placeholder="Nama lengkap">
+            </div>
+          </div>
+          <div class="grup-form">
+            <label class="label-form">Username *</label>
+            <div class="wrap-input">
+              <input type="text" id="daftar-username" placeholder="username_unik">
+            </div>
+          </div>
+        </div>
+
+        <div class="grup-form">
+          <label class="label-form">Email *</label>
+          <div class="wrap-input">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <input type="email" id="daftar-email" placeholder="email@contoh.com">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="grup-form">
+            <label class="label-form">Jurusan / Status</label>
+            <div class="wrap-input">
+              <input type="text" id="daftar-jurusan" placeholder="Mis: Mahasiswa">
+            </div>
+          </div>
+          <div class="grup-form">
+            <label class="label-form">Semester / Kelas</label>
+            <div class="wrap-input">
+              <input type="text" id="daftar-semester" placeholder="Mis: Semester 4">
+            </div>
+          </div>
+        </div>
+
+        <div class="grup-form">
+          <label class="label-form">Password *</label>
+          <div class="wrap-input">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" id="daftar-password" placeholder="Minimal 6 karakter">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"
+                 style="cursor:pointer;flex-shrink:0" onclick="togglePass('daftar-password')">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="grup-form">
+          <label class="label-form">Konfirmasi Password *</label>
+          <div class="wrap-input">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" id="daftar-konfirm" placeholder="Ulangi password"
+                   onkeydown="if(event.key==='Enter')prosesDaftar()">
+          </div>
+        </div>
+
+        <p id="err-daftar" style="color:var(--bahaya);font-size:12px;margin-bottom:12px;min-height:16px"></p>
+        <button class="btn-masuk" onclick="prosesDaftar()">Daftar Sekarang →</button>
+        <p class="teks-daftar">Sudah punya akun? <a onclick="gantiTabLogin('masuk')">Masuk di sini</a></p>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/database.js"></script>
+<script>
+// Cek jika sudah login → langsung ke dashboard
+(async () => {
+  document.getElementById('loading').classList.add('tampil');
+  try {
+    const sesi = await cekSesiAktif();
+    if (sesi) { window.location.href = 'dashboard.html'; return; }
+  } catch(e) {}
+  document.getElementById('loading').classList.remove('tampil');
+})();
+
+function tampilkanNotif(pesan, ikon='✅') {
+  const el = document.getElementById('notif-popup');
+  document.getElementById('notif-teks').textContent = pesan;
+  document.getElementById('notif-ikon').textContent = ikon;
+  el.classList.add('tampil');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('tampil'), 3500);
+}
+
+function gantiTabLogin(tab) {
+  const masuk  = tab === 'masuk';
+  document.getElementById('tab-masuk').classList.toggle('aktif', masuk);
+  document.getElementById('tab-daftar').classList.toggle('aktif', !masuk);
+  document.getElementById('form-masuk').classList.toggle('sembunyi', !masuk);
+  document.getElementById('form-daftar').classList.toggle('tampil', !masuk);
+  document.getElementById('err-masuk').textContent = '';
+  document.getElementById('err-daftar').textContent = '';
+}
+
+function togglePass(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+async function prosesLogin() {
+  const emailOrUser = document.getElementById('masuk-email').value.trim();
+  const password    = document.getElementById('masuk-password').value;
+  const errEl       = document.getElementById('err-masuk');
+
+  if (!emailOrUser || !password) { errEl.textContent = '⚠️ Email/username dan password wajib diisi!'; return; }
+
+  errEl.textContent = '';
+  const loading = document.getElementById('loading');
+  loading.classList.add('tampil');
+
+  try {
+    await loginAkun(emailOrUser, password);
+    window.location.href = 'dashboard.html';
+  } catch(e) {
+    loading.classList.remove('tampil');
+    errEl.textContent = '❌ ' + e.message;
+  }
+}
+
+async function prosesDaftar() {
+  const nama     = document.getElementById('daftar-nama').value.trim();
+  const username = document.getElementById('daftar-username').value.trim();
+  const email    = document.getElementById('daftar-email').value.trim();
+  const jurusan  = document.getElementById('daftar-jurusan').value.trim();
+  const semester = document.getElementById('daftar-semester').value.trim();
+  const password = document.getElementById('daftar-password').value;
+  const konfirm  = document.getElementById('daftar-konfirm').value;
+  const errEl    = document.getElementById('err-daftar');
+
+  if (password !== konfirm) { errEl.textContent = '❌ Konfirmasi password tidak cocok!'; return; }
+
+  errEl.textContent = '';
+  const loading = document.getElementById('loading');
+  loading.classList.add('tampil');
+
+  try {
+    await daftarAkun({ nama, username, email, password, jurusan, semester });
+    // Langsung login setelah daftar
+    await loginAkun(email, password);
+    tampilkanNotif(`Selamat datang, ${nama}! 🎉`, '👋');
+    setTimeout(() => window.location.href = 'dashboard.html', 800);
+  } catch(e) {
+    loading.classList.remove('tampil');
+    errEl.textContent = '❌ ' + e.message;
+  }
+}
+</script>
+
+</body>
+</html>

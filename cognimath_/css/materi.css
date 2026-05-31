@@ -1,0 +1,33 @@
+/* ─── MATERI ──────────────────────────────────────────────── */
+.item-materi{
+  display:flex;align-items:center;gap:14px;padding:16px;
+  background:var(--putih);border-radius:var(--radius);
+  margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;
+  transition:var(--trans);border-left:3px solid transparent;
+}
+.item-materi:hover{transform:translateX(4px);border-left-color:var(--biru);box-shadow:var(--shadow-md)}
+.item-materi .info{flex:1;min-width:0}
+.item-materi h4{font-size:14px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-materi p{font-size:12px;color:var(--abu)}
+.ikon-materi{width:46px;height:46px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px}
+
+/* Detail materi */
+.breadcrumb{font-size:12px;color:var(--abu);margin-bottom:16px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.breadcrumb span{color:var(--biru);font-weight:600}
+.kotak-materi{background:var(--putih);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow);line-height:1.8}
+.kotak-materi h1{font-size:24px;margin-bottom:6px}
+.kotak-materi .desc-materi{color:var(--abu);font-size:14px;margin-bottom:24px;border-bottom:1px solid var(--abu-terang);padding-bottom:16px}
+.intro-materi{background:var(--biru-pucat);border-radius:var(--radius-sm);padding:16px;font-size:14px;color:var(--biru-gelap);margin-bottom:24px;border-left:4px solid var(--biru)}
+.seksi-materi{margin-bottom:24px}
+.seksi-materi h3{font-size:15px;margin-bottom:10px;color:var(--biru-gelap);display:flex;align-items:center;gap:8px}
+.seksi-materi h3::before{content:'';width:4px;height:16px;background:var(--biru);border-radius:2px;display:block}
+.seksi-materi p{font-size:14px;color:#444;line-height:1.8}
+.kotak-rumus{
+  background:#1e2228;border-radius:var(--radius-sm);padding:16px 20px;
+  font-family:'Courier New',monospace;font-size:14px;margin:12px 0;
+  color:#90CAF9;overflow-x:auto;position:relative;
+}
+.kotak-rumus::before{content:'Rumus';position:absolute;top:8px;right:12px;font-size:10px;color:rgba(255,255,255,.3);font-family:'DM Sans',sans-serif}
+.nav-materi{display:flex;justify-content:space-between;margin-top:32px;padding-top:20px;border-top:1px solid var(--abu-terang);gap:12px}
+
+@media(max-width:640px){.kotak-materi{padding:20px}.nav-materi{flex-direction:column}}

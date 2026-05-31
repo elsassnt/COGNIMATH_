@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kuis — CogniMath</title>
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/video-kuis.css">
+</head>
+<body>
+
+<!-- Overlay soal kuis -->
+<div class="overlay-kuis modal-overlay" id="overlay-kuis">
+  <div class="kotak-kuis-modal">
+    <div class="header-kuis-modal">
+      <h3 id="judul-kuis-modal">Kuis</h3>
+      <div class="kanan-header-kuis">
+        <span id="counter-soal" style="font-size:12px;opacity:.8">Soal 1 dari 5</span>
+        <div class="timer" id="timer-kuis">15:00</div>
+        <button class="btn-tutup-kuis" onclick="tutupKuis()">✕</button>
+      </div>
+    </div>
+    <div class="body-kuis" id="body-kuis">
+      <div class="progress-kuis"><div class="isi-progress" id="isi-progress" style="width:0%"></div></div>
+      <p class="teks-soal" id="teks-soal"></p>
+      <div class="list-pilihan" id="list-pilihan"></div>
+    </div>
+    <div class="footer-kuis-modal" id="footer-kuis-modal">
+      <button class="btn btn-abu" onclick="soalSebelumnya()">← Sebelumnya</button>
+      <button class="btn btn-utama" id="btn-lanjut" onclick="soalSelanjutnya()">Selanjutnya →</button>
+    </div>
+  </div>
+</div>
+
+<div id="app-layout"></div>
+<template id="konten-halaman">
+  <div style="margin-bottom:20px">
+    <h1 style="font-size:20px">Kuis Interaktif</h1>
+    <p style="color:var(--abu);font-size:13px;margin-top:4px">Ada 6 kuis tersedia. Setiap kuis punya 5 soal dan timer 15 menit.</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+    <div class="tab-grup" style="margin-bottom:0" id="tab-kuis">
+      <div class="tab-item aktif" onclick="filterKuis('semua',this)">Semua</div>
+      <div class="tab-item" onclick="filterKuis('belum',this)">Belum Dikerjakan</div>
+      <div class="tab-item" onclick="filterKuis('selesai',this)">Sudah Selesai</div>
+    </div>
+  </div>
+  <div id="container-kuis"></div>
+</template>
+
+<script src="js/data.js"></script>
+<script src="js/database.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/layout.js"></script>
+<script>
+/* ── State kuis ── */
+const state = { kuisBerjalan:null, indeksSoal:0, jawaban:[], dipilih:null, timer:null, waktu:900 };
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const ok = await proteksiHalaman();
+  if (!ok) return;
+  renderLayout('kuis.html');
+  renderDaftarKuis('semua');
+});
+
+function filterKuis(filter, el) {
+  document.querySelectorAll('#tab-kuis .tab-item').forEach(t => t.classList.remove('aktif'));
+  el.classList.add('aktif');
+  renderDaftarKuis(filter);
+}
+
+function renderDaftarKuis(filter) {
+  const nilaiMap = window.nilaiKuisAktif || {};
+  let list = semuaKuis.map(k => ({ ...k, nilaiku: nilaiMap[k.id] ? nilaiMap[k.id].nilai : null }));
+
+  if (filter === 'belum')   list = list.filter(k => k.nilaiku === null);
+  if (filter === 'selesai') list = list.filter(k => k.nilaiku !== null);
+
+  const cont = document.getElementById('container-kuis');
+  if (!list.length) {
+    cont.innerHTML = `<div class="status-kosong"><div class="ikon-kosong">📝</div><h3>Tidak ada kuis</h3><p>Kuis untuk kategori ini belum tersedia.</p></div>`;
+    return;
+  }
+  cont.innerHTML = `<div class="grid-kuis">${list.map(k => {
+    const selesai     = k.nilaiku !== null;
+    const warnaNilai  = k.nilaiku >= 80 ? '#2e7d32' : k.nilaiku >= 60 ? '#F57F17' : '#D32F2F';
+    const percobaan   = window.nilaiKuisAktif[k.id] ? window.nilaiKuisAktif[k.id].percobaan : 0;
+    return `
+    <div class="kartu-kuis ${selesai?'selesai':''}">
+      <div class="header-kuis-card">
+        <div class="ikon-kuis-card">${k.ikon||'📝'}</div>
+        <div style="flex:1">
+          <h4>${k.judul}</h4>
+          <p class="sub-kuis">${k.pertanyaan.length} soal • 15 menit${selesai ? ` • ${percobaan}x percobaan`:''}</p>
+        </div>
+        ${selesai ? `<span class="badge ${k.nilaiku>=80?'badge-hijau':k.nilaiku>=60?'badge-oranye':'badge-merah'}">${k.nilaiku}/100</span>` : ''}
+      </div>
+      ${selesai ? `<div class="bar-nilai"><div class="isi-bar-nilai" style="width:${k.nilaiku}%;background:${warnaNilai}"></div></div>` : ''}
+      <p style="font-size:12px;color:var(--abu);margin-bottom:14px">${k.deskripsi}</p>
+      <div class="footer-kuis-card">
+        ${selesai
+          ? `<span class="badge badge-hijau">✓ Nilai terbaik: ${k.nilaiku}</span><button class="btn btn-garis btn-kecil" onclick="mulaiKuis(${k.id})">🔄 Ulangi</button>`
+          : `<span class="badge badge-abu">Belum dikerjakan</span><button class="btn btn-utama btn-kecil" onclick="mulaiKuis(${k.id})">Mulai →</button>`
+        }
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function mulaiKuis(id) {
+  const k = semuaKuis.find(x => x.id === id);
+  if (!k) return;
+  Object.assign(state, { kuisBerjalan:k, indeksSoal:0, jawaban:[], dipilih:null, waktu:900 });
+  document.getElementById('judul-kuis-modal').textContent = k.judul;
+  document.getElementById('body-kuis').style.display = '';
+  document.getElementById('footer-kuis-modal').style.display = '';
+  document.getElementById('timer-kuis').classList.remove('warning');
+  tampilkanSoal();
+  updateTimerUI();
+  if (state.timer) clearInterval(state.timer);
+  state.timer = setInterval(() => {
+    state.waktu--;
+    updateTimerUI();
+    if (state.waktu <= 60) document.getElementById('timer-kuis').classList.add('warning');
+    if (state.waktu <= 0)  { clearInterval(state.timer); tampilkanHasilKuis(); }
+  }, 1000);
+  document.getElementById('overlay-kuis').classList.add('terbuka');
+}
+
+function tampilkanSoal() {
+  const k     = state.kuisBerjalan;
+  const soal  = k.pertanyaan[state.indeksSoal];
+  const total = k.pertanyaan.length;
+  const persen= ((state.indeksSoal+1)/total)*100;
+  document.getElementById('counter-soal').textContent = `Soal ${state.indeksSoal+1} dari ${total}`;
+  document.getElementById('body-kuis').innerHTML = `
+    <div class="progress-kuis"><div class="isi-progress" id="isi-progress" style="width:${persen}%"></div></div>
+    <p class="teks-soal">${soal.soal}</p>
+    <div class="list-pilihan">
+      ${soal.pilihan.map((p,i) => `
+        <div class="pilihan" onclick="pilihJawaban(${i})" id="pil-${i}">
+          <div class="huruf">${String.fromCharCode(65+i)}</div>
+          <span>${p}</span>
+        </div>`).join('')}
+    </div>`;
+  state.dipilih = null;
+  document.getElementById('btn-lanjut').textContent = state.indeksSoal === total-1 ? '✓ Selesai' : 'Selanjutnya →';
+}
+
+function pilihJawaban(i) {
+  state.dipilih = i;
+  document.querySelectorAll('.pilihan').forEach(el => el.classList.remove('dipilih'));
+  document.getElementById('pil-'+i)?.classList.add('dipilih');
+}
+
+function soalSelanjutnya() {
+  if (state.dipilih === null) { tampilkanNotif('Pilih jawaban dulu ya!','⚠️'); return; }
+  const soal  = state.kuisBerjalan.pertanyaan[state.indeksSoal];
+  const benar = state.dipilih === soal.jawabanBenar;
+  document.querySelectorAll('.pilihan').forEach((el,i) => {
+    if (i === soal.jawabanBenar) el.classList.add('benar');
+    if (i === state.dipilih && !benar) el.classList.add('salah');
+    el.style.pointerEvents = 'none';
+  });
+  state.jawaban.push(benar);
+  setTimeout(() => {
+    state.indeksSoal++;
+    if (state.indeksSoal >= state.kuisBerjalan.pertanyaan.length) tampilkanHasilKuis();
+    else tampilkanSoal();
+  }, 700);
+}
+
+function soalSebelumnya() {
+  if (state.indeksSoal > 0) { state.indeksSoal--; state.jawaban.pop(); tampilkanSoal(); }
+}
+
+async function tampilkanHasilKuis() {
+  clearInterval(state.timer);
+  const benar = state.jawaban.filter(Boolean).length;
+  const total = state.kuisBerjalan.pertanyaan.length;
+  const nilai = Math.round((benar/total)*100);
+  const uid   = parseInt(localStorage.getItem('cognimath_uid'));
+
+  // Simpan ke database
+  await simpanNilaiKuis(uid, state.kuisBerjalan.id, nilai, state.jawaban);
+  await tambahRiwayatDB(uid, { tipe:'kuis', judul:state.kuisBerjalan.judul, keterangan:`${total} soal • ${benar} benar`, nilai, ikon:'🏆', warnaLatar:'#FFF8E1' });
+
+  // Update lokal
+  if (!window.nilaiKuisAktif[state.kuisBerjalan.id] || nilai > window.nilaiKuisAktif[state.kuisBerjalan.id].nilai) {
+    window.nilaiKuisAktif[state.kuisBerjalan.id] = { nilai, percobaan: (window.nilaiKuisAktif[state.kuisBerjalan.id]?.percobaan||0)+1 };
+  } else {
+    window.nilaiKuisAktif[state.kuisBerjalan.id].percobaan++;
+  }
+
+  const emoji  = nilai>=80?'🏆':nilai>=60?'👍':'💪';
+  const pesan  = nilai>=80?'Luar biasa!':nilai>=60?'Bagus, terus semangat!':'Jangan menyerah, coba lagi!';
+  const warna  = nilai>=80?'#2e7d32':nilai>=60?'#F57F17':'#D32F2F';
+
+  document.getElementById('body-kuis').innerHTML = `
+    <div class="kotak-hasil">
+      <div class="emoji-hasil">${emoji}</div>
+      <h2 style="margin-bottom:6px">Kuis Selesai!</h2>
+      <p style="color:var(--abu);font-size:13px;margin-bottom:20px">${pesan}</p>
+      <div class="nilai-besar" style="color:${warna}">${nilai}<span>/100</span></div>
+      <div style="width:80%;margin:16px auto;height:8px;background:var(--abu-latar);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${nilai}%;background:${warna};border-radius:4px;transition:width 1s ease"></div>
+      </div>
+      <div class="stat-hasil">
+        <div class="stat-hasil-item"><div class="angka" style="color:var(--sukses)">✓ ${benar}</div><div class="lbl">Benar</div></div>
+        <div class="stat-hasil-item"><div class="angka" style="color:var(--bahaya)">✗ ${total-benar}</div><div class="lbl">Salah</div></div>
+        <div class="stat-hasil-item"><div class="angka" style="color:var(--biru)">${total}</div><div class="lbl">Total</div></div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--abu)">✅ Nilai disimpan ke database</div>
+      <div class="btn-hasil">
+        <button class="btn btn-utama" onclick="tutupKuis();renderDaftarKuis('semua')">Lihat Semua Kuis</button>
+        <button class="btn btn-garis" onclick="mulaiKuis(${state.kuisBerjalan.id})">🔄 Coba Lagi</button>
+      </div>
+    </div>`;
+  document.getElementById('footer-kuis-modal').style.display = 'none';
+}
+
+function tutupKuis() {
+  document.getElementById('overlay-kuis').classList.remove('terbuka');
+  document.getElementById('footer-kuis-modal').style.display = '';
+  clearInterval(state.timer);
+}
+
+function updateTimerUI() {
+  const m = Math.floor(state.waktu/60).toString().padStart(2,'0');
+  const s = (state.waktu%60).toString().padStart(2,'0');
+  document.getElementById('timer-kuis').textContent = `${m}:${s}`;
+}
+</script>
+</body>
+</html>

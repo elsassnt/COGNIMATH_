@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video — CogniMath</title>
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/video-kuis.css">
+</head>
+<body>
+
+<!-- Overlay player YouTube -->
+<div class="overlay-video" id="overlay-video">
+  <div class="kotak-player">
+    <div class="header-player">
+      <div class="header-player-info">
+        <h4 id="judul-player">Memuat...</h4>
+        <span id="sub-player">YouTube · In-App Player</span>
+      </div>
+      <div class="header-player-aksi">
+        <button class="btn-yt-external" onclick="bukaYouTubeAktif()" title="Buka di YouTube">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.19a8.17 8.17 0 0 0 4.77 1.52V6.27a4.85 4.85 0 0 1-1-.58z"/></svg>
+          <span>Buka di YouTube</span>
+        </button>
+        <button class="btn-tutup-video" onclick="tutupVideo()">✕</button>
+      </div>
+    </div>
+    <div id="wadah-player"><div id="yt-player"></div></div>
+    <div class="footer-player">
+      <p>🔒 Video diputar aman di dalam aplikasi · Powered by YouTube</p>
+      <button class="btn btn-abu btn-kecil" onclick="tutupVideo()">✕ Tutup</button>
+    </div>
+  </div>
+</div>
+
+<div id="app-layout"></div>
+<template id="konten-halaman">
+  <div style="margin-bottom:20px">
+    <h1 style="font-size:20px">Video Pembelajaran</h1>
+    <p style="color:var(--abu);font-size:13px;margin-top:4px">Tonton video YouTube langsung di sini tanpa keluar aplikasi ❤️</p>
+  </div>
+
+  <div id="panel-info" style="background:var(--biru-pucat);border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px">
+    <span style="font-size:22px;flex-shrink:0">💡</span>
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:600;color:var(--biru-gelap);margin-bottom:4px">Cara Memutar Video</div>
+      <div style="font-size:12px;color:var(--biru-gelap);line-height:1.7">
+        <b>YouTube (online):</b> Klik ▶ — video langsung diputar di dalam aplikasi, tidak keluar!<br>
+        <b>Video Lokal (offline):</b> Klik "📁 Upload Video" untuk memutar file dari perangkatmu.
+      </div>
+    </div>
+    <button onclick="document.getElementById('panel-info').style.display='none'" style="background:none;border:none;color:var(--abu);cursor:pointer;font-size:16px;flex-shrink:0">✕</button>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px">
+    <div class="tab-grup" style="margin-bottom:0" id="tab-video">
+      <div class="tab-item aktif"  data-filter="semua"     onclick="filterVideo('semua',this)">Semua</div>
+      <div class="tab-item"        data-filter="aljabar"   onclick="filterVideo('aljabar',this)">Aljabar</div>
+      <div class="tab-item"        data-filter="persamaan" onclick="filterVideo('persamaan',this)">Persamaan</div>
+      <div class="tab-item"        data-filter="aritmatika" onclick="filterVideo('aritmatika',this)">Lainnya</div>
+      <div class="tab-item"        data-filter="favorit"   onclick="filterVideo('favorit',this)">❤️ Favorit</div>
+      <div class="tab-item"        data-filter="lokal"     onclick="filterVideo('lokal',this)">📁 Videomu</div>
+    </div>
+    <button class="btn btn-garis btn-kecil" onclick="document.getElementById('input-video-lokal').click()">📁 Upload Video Lokal</button>
+    <input type="file" id="input-video-lokal" accept="video/*" style="display:none" onchange="uploadVideoLokal(event)">
+  </div>
+
+  <div id="container-video"></div>
+</template>
+
+<script src="js/data.js"></script>
+<script src="js/database.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/video.js"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const ok = await proteksiHalaman();
+  if (!ok) return;
+  renderLayout('video.html');
+  renderHalamanVideo('semua');
+
+  document.getElementById('overlay-video').addEventListener('click', e => {
+    if (e.target === document.getElementById('overlay-video')) tutupVideo();
+  });
+});
+
+function filterVideo(filter, el) {
+  document.querySelectorAll('#tab-video .tab-item').forEach(t => t.classList.remove('aktif'));
+  el.classList.add('aktif');
+  renderHalamanVideo(filter);
+}
+
+function bukaYouTubeAktif() {
+  if (window._ytAktifId) window.open('https://www.youtube.com/watch?v='+window._ytAktifId, '_blank');
+  else tampilkanNotif('Tidak ada video yang diputar.', '⚠️');
+}
+</script>
+</body>
+</html>
